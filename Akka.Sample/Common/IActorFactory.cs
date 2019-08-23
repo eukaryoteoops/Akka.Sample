@@ -5,6 +5,8 @@ namespace Akka.Sample.Common
 {
     public interface IActorFactory
     {
-        IActorRef GetLogActor();
+        IActorRef GetDemoActor();
+        IActorRef GetDeployActor();
+
     }
 }

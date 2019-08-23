@@ -10,4 +10,8 @@
     <PackageReference Include="Akka.Remote" Version="1.3.14" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Akka.Sample\Akka.Sample.csproj" />
+  </ItemGroup>
+
 </Project>

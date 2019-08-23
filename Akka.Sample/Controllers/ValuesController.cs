@@ -9,17 +9,20 @@ namespace Akka.Sample.Controllers
     [ApiController]
     public class ValuesController : ControllerBase
     {
-        private IActorRef _logActor;
+        private IActorRef _demoActor;
+        private IActorRef _deployActor;
 
         public ValuesController(IActorFactory factory)
         {
-            _logActor = factory.GetLogActor();
+            _demoActor = factory.GetDemoActor();
+            _deployActor = factory.GetDeployActor();
+
         }
 
         [HttpGet]
         public ActionResult<IEnumerable<string>> Get()
         {
-            _logActor.Tell("Test");
+            //_demoActor.Tell("Test");
             return new string[] { "value1", "value2" };
         }
     }

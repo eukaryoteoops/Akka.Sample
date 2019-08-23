@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using Akka.Configuration;
+using Akka.Routing;
 using Akka.Sample.Actor;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -14,28 +15,21 @@ namespace Akka.Sample.Common
 
         public ActorFactory(IServiceProvider provider)
         {
-            var config = ConfigurationFactory.ParseString(@"
-                            akka {  
-                                actor {
-                                    provider = ""Akka.Remote.RemoteActorRefProvider, Akka.Remote""
-                                }
-                                remote {
-                                    helios.tcp {
-                                        transport-class = ""Akka.Remote.Transport.Helios.HeliosTcpTransport, Akka.Remote""
-                                        applied-adapters = []
-                                        transport-protocol = tcp
-                                        port = 8081
-                                        hostname = localhost
-                                    }
-                                }
-                            }");
+            var config = ConfigurationFactory.ParseString(HOCONConfig);
             var actorSystem = ActorSystem.Create("root", config);
             var logger = provider.GetService<ILogger>();
             //Register Actors
-            Register(ActorNames.Log, () => actorSystem.ActorOf(Props.Create<LogActor>(logger), ActorNames.Log));
+            //Mailbox type : UnboundedMailbox(default), UnboundedPriorityMailbox(need override PriorityGenerator())
+            //Router type : new RoundRobinPool(5), new BroadcastPool(5), new RandomPool(5), new ConsistentHashingPool(5).WithHashMapping(o => key)
+            Register(ActorNames.Demo, () => actorSystem.ActorOf(Props.Create<DemoActor>(logger).WithRouter(new SmallestMailboxPool(5)), ActorNames.Demo));
+            //Deploy to target client, client project must ref the project where actor located.
+            Register(ActorNames.Deploy, () => actorSystem.ActorOf(Props.Create<DeployActor>()
+                .WithDeploy(Deploy.None.WithScope(new RemoteScope(Address.Parse("akka.tcp://SenderClient@localhost:8080")))), ActorNames.Deploy));
         }
 
-        public IActorRef GetLogActor() => Resolve(ActorNames.Log);
+        public IActorRef GetDemoActor() => Resolve(ActorNames.Demo);
+        public IActorRef GetDeployActor() => Resolve(ActorNames.Deploy);
+
 
         private void Register(object key, Func<IActorRef> actorFactory)
         {
@@ -49,10 +43,28 @@ namespace Akka.Sample.Common
 
             return _Actors[key].Value;
         }
+
+        //Human-Optimized Config Object Notation
+        private string HOCONConfig => @"
+                            akka {  
+                                actor {
+                                    provider = ""Akka.Remote.RemoteActorRefProvider, Akka.Remote""
+                                }
+                                remote {
+                                    helios.tcp {
+                                        transport-class = ""Akka.Remote.Transport.Helios.HeliosTcpTransport, Akka.Remote""
+                                        applied-adapters = []
+                                        transport-protocol = tcp
+                                        port = 8081
+                                        hostname = localhost
+                                    }
+                                }
+                            }";
     }
 
     public static class ActorNames
     {
-        public static string Log => "log";
+        public static string Demo => "demo";
+        public static string Deploy => "deploy";
     }
 }
