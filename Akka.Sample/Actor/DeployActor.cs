@@ -10,7 +10,7 @@ namespace Akka.Sample.Actor
         {
             Receive<string>(o =>
             {
-                Console.WriteLine($"{o} - {typeof(DemoActor).FullName} - {Context.Self.Path}");
+                Console.WriteLine($"{o} - {typeof(DeployActor).FullName} - {Context.Self.Path}");
             });
         }
 
